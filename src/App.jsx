@@ -9,6 +9,7 @@ import Works from './components/Works.jsx'
 import Skills from './components/Skills.jsx'
 import Experience from './components/Experience.jsx'
 import Testimonials from './components/Testimonials.jsx'
+import Gallery from './components/Gallery.jsx'
 import Contact from './components/Contact.jsx'
 import Footer from './components/Footer.jsx'
 import MusicPlayer from './components/MusicPlayer.jsx'
@@ -30,6 +31,7 @@ function App() {
         <Experience />
         <Works />
         <Testimonials />
+        <Gallery />
         <Skills />
         <Contact />
         <Footer />

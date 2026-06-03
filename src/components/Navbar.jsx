@@ -8,6 +8,7 @@ const sections = [
   { id: 'experience', label: '历程' },
   { id: 'works', label: '作品' },
   { id: 'testimonials', label: '评价' },
+  { id: 'gallery', label: '画廊' },
   { id: 'skills', label: '技能' },
   { id: 'contact', label: '联系' },
 ]
