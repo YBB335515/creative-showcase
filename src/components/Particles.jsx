@@ -34,8 +34,11 @@ export default function Particles({ scrollProgress }) {
   useFrame((state) => {
     if (!pointsRef.current) return
     const scroll = scrollProgress?.get() ?? 0
-    pointsRef.current.rotation.y = state.clock.elapsedTime * 0.02 + scroll * 0.5
-    pointsRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.01) * 0.1 + scroll * 0.2
+    const t = state.clock.elapsedTime
+    pointsRef.current.rotation.y = t * 0.02 + scroll * 0.5
+    pointsRef.current.rotation.x = Math.sin(t * 0.01) * 0.1 + scroll * 0.2
+    // Subtle twinkle
+    pointsRef.current.material.size = 0.06 + Math.sin(t * 0.5) * 0.015
   })
 
   return (

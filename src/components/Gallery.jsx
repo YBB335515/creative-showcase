@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 const images = [
@@ -15,10 +15,18 @@ const ANGLE_STEP = 360 / images.length
 export default function Gallery() {
   const [rotation, setRotation] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
+  const [loadedImages, setLoadedImages] = useState(new Set())
   const lastX = useRef(0)
   const rotationRef = useRef(0)
   const velocityRef = useRef(0)
   const rafRef = useRef(null)
+
+  // Snap to nearest image
+  const snapToNearest = useCallback(() => {
+    const snapped = Math.round(rotationRef.current / ANGLE_STEP) * ANGLE_STEP
+    rotationRef.current = snapped
+    setRotation(snapped)
+  }, [])
 
   const handlePointerDown = useCallback((e) => {
     setIsDragging(true)
@@ -39,20 +47,41 @@ export default function Gallery() {
 
   const handlePointerUp = useCallback(() => {
     setIsDragging(false)
-    // Inertia
     const v = velocityRef.current
     if (Math.abs(v) > 0.5) {
+      // Inertia with cubic-bezier-like decay
       const decay = () => {
-        velocityRef.current *= 0.95
+        velocityRef.current *= 0.92
         rotationRef.current += velocityRef.current
         setRotation(rotationRef.current)
-        if (Math.abs(velocityRef.current) > 0.1) {
+        if (Math.abs(velocityRef.current) > 0.3) {
           rafRef.current = requestAnimationFrame(decay)
+        } else {
+          snapToNearest()
         }
       }
       rafRef.current = requestAnimationFrame(decay)
+    } else {
+      snapToNearest()
+    }
+  }, [snapToNearest])
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
   }, [])
+
+  // Calculate current active index
+  const activeIndex = Math.round(-rotationRef.current / ANGLE_STEP) % images.length
+  const activeIdx = ((activeIndex % images.length) + images.length) % images.length
+
+  const goTo = (index) => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    const target = -(index * ANGLE_STEP)
+    rotationRef.current = target
+    setRotation(target)
+  }
 
   return (
     <section id="gallery" className="section section-glass">
@@ -100,7 +129,7 @@ export default function Gallery() {
             height: 0,
             transformStyle: 'preserve-3d',
             transform: `rotateY(${rotation}deg)`,
-            transition: isDragging ? 'none' : 'transform 0.1s ease',
+            transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
           }}
         >
           {images.map((img, i) => {
@@ -116,27 +145,64 @@ export default function Gallery() {
                   top: -130,
                   borderRadius: 16,
                   overflow: 'hidden',
-                  border: '2px solid var(--glass-border)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                  border: `2px solid ${i === activeIdx ? 'var(--color-primary)' : 'var(--glass-border)'}`,
+                  boxShadow: i === activeIdx
+                    ? '0 0 30px rgba(0, 240, 255, 0.3), 0 8px 32px rgba(0,0,0,0.4)'
+                    : '0 8px 32px rgba(0,0,0,0.4)',
                   transform: `rotateY(${angle}deg) translateZ(${RADIUS}px)`,
                   backfaceVisibility: 'hidden',
+                  transition: 'border-color 0.3s, box-shadow 0.3s',
                 }}
               >
                 <img
                   src={img.src}
                   alt=""
+                  loading="lazy"
+                  onLoad={() => setLoadedImages((prev) => new Set(prev).add(i))}
                   style={{
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
                     display: 'block',
                     pointerEvents: 'none',
+                    opacity: loadedImages.has(i) ? 1 : 0,
+                    transition: 'opacity 0.5s ease',
+                    transform: i === activeIdx ? 'scale(1.05)' : 'scale(1)',
+                    transition: 'opacity 0.5s ease, transform 0.3s ease',
                   }}
                 />
               </div>
             )
           })}
         </div>
+      </div>
+
+      {/* Pagination dots */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 12,
+        marginTop: -20,
+        paddingBottom: 40,
+      }}>
+        {images.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            style={{
+              width: i === activeIdx ? 32 : 10,
+              height: 10,
+              borderRadius: 5,
+              border: 'none',
+              cursor: 'pointer',
+              background: i === activeIdx
+                ? 'linear-gradient(90deg, var(--color-primary), var(--color-secondary))'
+                : 'rgba(255,255,255,0.2)',
+              transition: 'all 0.3s ease',
+            }}
+            aria-label={`跳转到第 ${i + 1} 张图片`}
+          />
+        ))}
       </div>
     </section>
   )
