@@ -3,6 +3,7 @@ import './App.css'
 import Scene3D from './components/Scene3D.jsx'
 import Navbar from './components/Navbar.jsx'
 import Hero from './components/Hero.jsx'
+import Intro from './components/Intro.jsx'
 import About from './components/About.jsx'
 import Works from './components/Works.jsx'
 import Skills from './components/Skills.jsx'
@@ -24,6 +25,7 @@ function App() {
       <MusicPlayer />
       <div className="content">
         <Hero />
+        <Intro />
         <About />
         <Experience />
         <Works />

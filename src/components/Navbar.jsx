@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 const sections = [
   { id: 'hero', label: '首页' },
+  { id: 'intro', label: '介绍' },
   { id: 'about', label: '关于' },
   { id: 'experience', label: '历程' },
   { id: 'works', label: '作品' },
