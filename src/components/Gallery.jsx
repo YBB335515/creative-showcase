@@ -15,6 +15,7 @@ const ANGLE_STEP = 360 / images.length
 export default function Gallery() {
   const [rotation, setRotation] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
+  const [isInertia, setIsInertia] = useState(false)  // 惯性阶段禁用 CSS transition
   const [loadedImages, setLoadedImages] = useState(new Set())
   const lastX = useRef(0)
   const rotationRef = useRef(0)
@@ -30,6 +31,7 @@ export default function Gallery() {
 
   const handlePointerDown = useCallback((e) => {
     setIsDragging(true)
+    setIsInertia(false)
     lastX.current = e.clientX ?? e.touches?.[0]?.clientX ?? 0
     velocityRef.current = 0
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
@@ -50,6 +52,7 @@ export default function Gallery() {
     const v = velocityRef.current
     if (Math.abs(v) > 0.5) {
       // Inertia with cubic-bezier-like decay
+      setIsInertia(true)  // 惯性阶段关掉 CSS transition，避免与 JS 逐帧更新冲突
       const decay = () => {
         velocityRef.current *= 0.92
         rotationRef.current += velocityRef.current
@@ -57,6 +60,7 @@ export default function Gallery() {
         if (Math.abs(velocityRef.current) > 0.3) {
           rafRef.current = requestAnimationFrame(decay)
         } else {
+          setIsInertia(false)
           snapToNearest()
         }
       }
@@ -129,7 +133,7 @@ export default function Gallery() {
             height: 0,
             transformStyle: 'preserve-3d',
             transform: `rotateY(${rotation}deg)`,
-            transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
+            transition: isDragging || isInertia ? 'none' : 'transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1)',
           }}
         >
           {images.map((img, i) => {
@@ -166,7 +170,6 @@ export default function Gallery() {
                     display: 'block',
                     pointerEvents: 'none',
                     opacity: loadedImages.has(i) ? 1 : 0,
-                    transition: 'opacity 0.5s ease',
                     transform: i === activeIdx ? 'scale(1.05)' : 'scale(1)',
                     transition: 'opacity 0.5s ease, transform 0.3s ease',
                   }}
