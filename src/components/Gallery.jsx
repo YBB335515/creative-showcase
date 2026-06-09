@@ -2,11 +2,11 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
 const images = [
-  { src: '/creative-showcase/images/profile.jpg' },
-  { src: '/creative-showcase/images/img1.jpg' },
-  { src: '/creative-showcase/images/img2.jpg' },
-  { src: '/creative-showcase/images/img3.png' },
-  { src: '/creative-showcase/images/img4.jpg' },
+  { src: '/images/profile.jpg' },
+  { src: '/images/img1.jpg' },
+  { src: '/images/img2.jpg' },
+  { src: '/images/img3.png' },
+  { src: '/images/img4.jpg' },
 ]
 
 const RADIUS = 280

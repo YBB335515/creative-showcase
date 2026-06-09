@@ -8,7 +8,7 @@ export default function MusicPlayer() {
   const toggle = () => {
     if (!audioRef.current) {
       // 把音乐文件放在 public/music/ 目录下，命名为 bgm.mp3
-      audioRef.current = new Audio('/creative-showcase/music/bgm.mp3')
+      audioRef.current = new Audio('/music/bgm.mp3')
       audioRef.current.loop = true
     }
     if (playing) {

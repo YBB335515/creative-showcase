@@ -49,7 +49,7 @@ export default function Intro() {
               boxShadow: 'var(--shadow-glow)',
             }}>
               <img
-                src="/creative-showcase/images/profile.jpg"
+                src="/images/profile.jpg"
                 alt="个人照片"
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
               />
