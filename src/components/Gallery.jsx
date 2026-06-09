@@ -15,49 +15,61 @@ const ANGLE_STEP = 360 / images.length
 export default function Gallery() {
   const [rotation, setRotation] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
-  const [isInertia, setIsInertia] = useState(false)  // 惯性阶段禁用 CSS transition
+  const [isInertia, setIsInertia] = useState(false)
   const [loadedImages, setLoadedImages] = useState(new Set())
+  const [displayIdx, setDisplayIdx] = useState(0) // 稳定后的高亮索引
+  // 使用 ref 避免闭包过期
+  const isDown = useRef(false)
   const lastX = useRef(0)
-  const rotationRef = useRef(0)
-  const velocityRef = useRef(0)
+  const rot = useRef(0)
+  const vel = useRef(0)
   const rafRef = useRef(null)
 
-  // Snap to nearest image
-  const snapToNearest = useCallback(() => {
-    const snapped = Math.round(rotationRef.current / ANGLE_STEP) * ANGLE_STEP
-    rotationRef.current = snapped
-    setRotation(snapped)
+  // 只在非拖拽/惯性时更新高亮，避免边界抖动
+  const settleDisplay = useCallback(() => {
+    const idx = Math.round(-rot.current / ANGLE_STEP) % images.length
+    setDisplayIdx(((idx % images.length) + images.length) % images.length)
   }, [])
 
+  const snapToNearest = useCallback(() => {
+    const snapped = Math.round(rot.current / ANGLE_STEP) * ANGLE_STEP
+    rot.current = snapped
+    setRotation(snapped)
+    settleDisplay()
+  }, [settleDisplay])
+
   const handlePointerDown = useCallback((e) => {
+    isDown.current = true
     setIsDragging(true)
     setIsInertia(false)
     lastX.current = e.clientX ?? e.touches?.[0]?.clientX ?? 0
-    velocityRef.current = 0
+    vel.current = 0
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
   }, [])
 
   const handlePointerMove = useCallback((e) => {
-    if (!isDragging) return
+    if (!isDown.current) return
     const clientX = e.clientX ?? e.touches?.[0]?.clientX ?? 0
     const delta = clientX - lastX.current
-    velocityRef.current = delta * 0.5
-    rotationRef.current += velocityRef.current
-    setRotation(rotationRef.current)
+    // 触屏抖动忽略 < 2px 的移动
+    if (Math.abs(delta) < 2) return
+    vel.current = delta * 0.5
+    rot.current += vel.current
+    setRotation(rot.current)
     lastX.current = clientX
-  }, [isDragging])
+  }, [])
 
   const handlePointerUp = useCallback(() => {
+    isDown.current = false
     setIsDragging(false)
-    const v = velocityRef.current
+    const v = vel.current
     if (Math.abs(v) > 0.5) {
-      // Inertia with cubic-bezier-like decay
-      setIsInertia(true)  // 惯性阶段关掉 CSS transition，避免与 JS 逐帧更新冲突
+      setIsInertia(true)
       const decay = () => {
-        velocityRef.current *= 0.92
-        rotationRef.current += velocityRef.current
-        setRotation(rotationRef.current)
-        if (Math.abs(velocityRef.current) > 0.3) {
+        vel.current *= 0.92
+        rot.current += vel.current
+        setRotation(rot.current)
+        if (Math.abs(vel.current) > 0.3) {
           rafRef.current = requestAnimationFrame(decay)
         } else {
           setIsInertia(false)
@@ -76,15 +88,15 @@ export default function Gallery() {
     }
   }, [])
 
-  // Calculate current active index
-  const activeIndex = Math.round(-rotationRef.current / ANGLE_STEP) % images.length
-  const activeIdx = ((activeIndex % images.length) + images.length) % images.length
+  // 高亮索引由 settleDisplay() 在松手后更新，避免拖拽时边界抖动
 
   const goTo = (index) => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    setIsInertia(false)
     const target = -(index * ANGLE_STEP)
-    rotationRef.current = target
+    rot.current = target
     setRotation(target)
+    settleDisplay()
   }
 
   return (
@@ -149,8 +161,8 @@ export default function Gallery() {
                   top: -130,
                   borderRadius: 16,
                   overflow: 'hidden',
-                  border: `2px solid ${i === activeIdx ? 'var(--color-primary)' : 'var(--glass-border)'}`,
-                  boxShadow: i === activeIdx
+                  border: `2px solid ${i === displayIdx ? 'var(--color-primary)' : 'var(--glass-border)'}`,
+                  boxShadow: i === displayIdx
                     ? '0 0 30px rgba(0, 240, 255, 0.3), 0 8px 32px rgba(0,0,0,0.4)'
                     : '0 8px 32px rgba(0,0,0,0.4)',
                   transform: `rotateY(${angle}deg) translateZ(${RADIUS}px)`,
@@ -170,7 +182,7 @@ export default function Gallery() {
                     display: 'block',
                     pointerEvents: 'none',
                     opacity: loadedImages.has(i) ? 1 : 0,
-                    transform: i === activeIdx ? 'scale(1.05)' : 'scale(1)',
+                    transform: i === displayIdx ? 'scale(1.05)' : 'scale(1)',
                     transition: 'opacity 0.5s ease, transform 0.3s ease',
                   }}
                 />
@@ -193,12 +205,12 @@ export default function Gallery() {
             key={i}
             onClick={() => goTo(i)}
             style={{
-              width: i === activeIdx ? 32 : 10,
+              width: i === displayIdx ? 32 : 10,
               height: 10,
               borderRadius: 5,
               border: 'none',
               cursor: 'pointer',
-              background: i === activeIdx
+              background: i === displayIdx
                 ? 'linear-gradient(90deg, var(--color-primary), var(--color-secondary))'
                 : 'rgba(255,255,255,0.2)',
               transition: 'all 0.3s ease',
